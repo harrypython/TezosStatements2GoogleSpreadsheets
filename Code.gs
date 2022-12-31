@@ -13,7 +13,7 @@ const options = {
 * @param {Date} dt_to - Statement period to.
 * @return {Array} .csv file converted to array.
 */
-function get_statements(accounts, dt_from, dt_to) {
+function get_statements(accounts, dt_from, dt_to, currency = "USD") {
   let arr_accounts = accounts.split(",");
   let full_data = Array();
   for (k in arr_accounts) {
@@ -35,7 +35,7 @@ function get_statements(accounts, dt_from, dt_to) {
 * @param {Date} dt_to - Statement period to.
 * @return {Array} .csv file converted to array.
 */
-function get_statement(account, dt_from, dt_to) {
+function get_statement(account, dt_from, dt_to, currency) {
   const date_from = new Date(dt_from);
   const date_to = new Date(dt_to);
 
@@ -46,7 +46,9 @@ function get_statement(account, dt_from, dt_to) {
     date_from.toLocaleString("sv-SE", { timeZone: "UTC" }) +
     "&to=" +
     date_to.toLocaleString("sv-SE", { timeZone: "UTC" }) +
-    "&currency=usd&historical=true&delimiter=semicolon&separator=point";
+    "&currency=" +
+    currency.toLowerCase() + 
+    "&historical=true&delimiter=semicolon&separator=point";
 
   let response = UrlFetchApp.fetch(url, options);
   let content_text = response.getContentText();
