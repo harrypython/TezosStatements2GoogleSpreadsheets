@@ -6,18 +6,23 @@ const options = {
   "Connection": "keep-alive",
 };
 
+const arr_currency = ["", "USD", "EUR", "GBP", "CNY", "JPY"];
+
+var list_addresses = [];
+
 /** 
 * Merge statements
 * @param {String} accounts - list of tezos address separated by comma (,)
 * @param {Date} dt_from - Statement period from.
 * @param {Date} dt_to - Statement period to.
+* @param {String} currency - The options are USD, EUR, GBP, CNY, JPY
 * @return {Array} .csv file converted to array.
 */
 function get_statements(accounts, dt_from, dt_to, currency = "USD") {
   let arr_accounts = accounts.split(",");
   let full_data = Array();
   for (k in arr_accounts) {
-    let data = get_statement(arr_accounts[k], dt_from, dt_to);
+    let data = get_statement(arr_accounts[k], dt_from, dt_to, currency);
     if (full_data.length == 0) {
       full_data = data;
     } else {
@@ -33,9 +38,11 @@ function get_statements(accounts, dt_from, dt_to, currency = "USD") {
 * @param {String} account - tezo address
 * @param {Date} dt_from - Statement period from.
 * @param {Date} dt_to - Statement period to.
+* @param {String} currency - The options are USD, EUR, GBP, CNY, JPY
 * @return {Array} .csv file converted to array.
 */
 function get_statement(account, dt_from, dt_to, currency) {
+  currency = "USD";
   const date_from = new Date(dt_from);
   const date_to = new Date(dt_to);
 
@@ -91,11 +98,13 @@ function get_quote(currency = "USD") {
 */
 function format_data(data, i) {
   let i_float = ["3", "4", "6", "7", "8", "9"];
-  // let i_address = ["5","10"]
+  let i_address = ["5","10"]
   if (data == "") {
     return data;
   } else if (i == 1) {
     r = new Date(data);
+  } else if (i_address.includes(i)) {
+    r = get_user(data);
   } else if (i_float.includes(i)) {
     if (data == "") {
       r = data;
@@ -106,4 +115,34 @@ function format_data(data, i) {
     r = data;
   }
   return r;
+}
+
+function get_user(address){
+  if(address in list_addresses == false){
+    let url = "https://back.tzkt.io/v1/accounts/"+address+"?metadata=true";
+    let response = UrlFetchApp.fetch(url, options);
+    let content = JSON.parse(response.getContentText());
+    if ("alias" in content){
+      list_addresses[address] = content.alias;
+    }else{
+      list_addresses[address] = address
+    }
+  }
+  return list_addresses[address];
+}
+
+function get_price(currency="USD"){
+  let url = "https://stats.dipdup.net/v1/histogram/prices/avg/month?field=Price&Currency="+arr_currency.indexOf("USD");+"&size=1000";
+  let response = UrlFetchApp.fetch(url, options);
+  let content = JSON.parse(response.getContentText());
+  let data = Array();
+  for(let k in content){
+    let row = Array();
+    row.push(
+      new Date(content[k]["ts"]*1000),
+      content[k]["value"]
+    );
+    data.push(row);
+  }
+  return data;
 }
